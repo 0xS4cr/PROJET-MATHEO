@@ -5,50 +5,41 @@ import pandas as pd
 import streamlit as st
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-
-from config import settings
+from dotenv import load_dotenv
+import psycopg2
 from database import Base, SessionLocal, engine
 
+load_dotenv()
 
-st.set_page_config(page_title=settings.streamlit_title, layout="wide")
-st.title(settings.streamlit_title)
+host = os.getenv("DB_HOST")
+user = os.getenv("DB_USER")
+password = os.getenv("DB_PASSWORD")
+dbname = os.getenv("DB_NAME")
+dbschema = os.getenv("DB_SCHEMA")
+dbtable = os.getenv("DB_TABLE")
 
-st.sidebar.header("Configuration")
-if st.sidebar.button("Vérifier la connexion DB"):
-    try:
-        with engine.connect() as connection:
-            result = connection.execute(text("SELECT version();"))
-            version = result.scalar()
-            st.success(f"Connexion réussie : {version}")
-    except SQLAlchemyError as error:
-        st.error(f"Erreur de connexion : {error}")
-
-st.markdown("## Exemple de tableau de données")
-
-sample_data = pd.DataFrame(
-    {
-        "Nom": ["Alice", "Bob", "Matheo", "Chloé"],
-        "Score": [88, 92, 75, 81],
-        "Ville": ["Paris", "Lyon", "Nantes", "Bordeaux"],
-    }
+conn = psycopg2.connect(
+    host=host,
+    database=dbname,
+    user=user,
+    password=password
 )
 
-st.dataframe(sample_data)
 
-chart = alt.Chart(sample_data).mark_bar().encode(
-    x=alt.X("Nom", sort=None),
-    y="Score",
-    color="Ville",
+#Titre page
+
+st.title("StatCoop - Angélique MAIRE")
+
+st.sidebar.title("Menu")
+
+option = st.sidebar.selectbox(
+    "Choisissez une option",
+    ["Acceuil", "Par domaines", "Par années"]
 )
 
-st.altair_chart(chart, use_container_width=True)
-
-st.sidebar.markdown("### Actions")
-if st.sidebar.button("Créer les tables SQLAlchemy"):
-    try:
-        Base.metadata.create_all(bind=engine)
-        st.success("Tables créées avec succès.")
-    except SQLAlchemyError as error:
-        st.error(f"Erreur de création des tables : {error}")
-
-st.sidebar.info("Modifiez `config.py` et `.env` pour adapter la configuration PostgreSQL.")
+if option == "Acceuil":
+    st.write("Choisir un filtre")
+elif option == "Par domaines":
+    st.write("Hello world")
+elif option == "Par années":
+    st.write("Hello world")
