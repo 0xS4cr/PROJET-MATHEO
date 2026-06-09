@@ -43,8 +43,6 @@ if option == "Acceuil":
 elif option == "Par technicien":
     st.write("Statistiques par technicien")
 
-
-    #deuxième menu dans la side bar
     st.sidebar.title("Filtres")
 
     filtre = st.sidebar.selectbox(
@@ -52,122 +50,97 @@ elif option == "Par technicien":
         ["Aucun","famille n°40","famille n°41","famille n°42","famille n°43","famille n°44","famille n°45","famille n°46"]
     )
 
+    # chagrement SQL
+    
+    cursor = conn.cursor()
 
-    # Affichage du tableau sans filtre.
+    cursor.execute(f"""
+        SELECT *
+        FROM {dbschema}.{dbtable}
+    """)
 
-    if filtre =="Aucun":
+    df = pd.DataFrame(
+        cursor.fetchall(),
+        columns=[desc[0] for desc in cursor.description]
+    )
 
-        #Définition du curseur pour le tableau SQL
-        cursor = conn.cursor()
+    cursor.close()
 
-    # je défini df pour l'utiliser dans mon filtrage
-        cursor.execute(f"""
-            SELECT *
-            FROM {dbschema}.{dbtable}
-        """)
+    # filtres campagnes
+    df = df[df["campagne_appro"].isin(["2024-2025", "2025-2026"])]
 
-        filtre = cursor.fetchall()
+    df["quantite"] = pd.to_numeric(df["quantite"], errors="coerce")
 
-        df = pd.DataFrame(
-            filtre,
-            columns=[desc[0] for desc in cursor.description]
-        )
+    df_work = df.copy()
 
-        df["date_operation"] = pd.to_datetime(df["date_operation"])
-        df["quantite"] = pd.to_numeric(df["quantite"], errors="coerce")
 
-        # création colonne année
-        df["annee"] = df["date_operation"].dt.year
+    # sans filtre
 
-        # tableau croisé
+
+    if filtre == "Aucun":
+
         df_table = pd.pivot_table(
-            df,
-            index=["technicien", "annee"],
-            columns= "code_famille",
+            df_work,
+            index=["technicien", "code_famille"],
+            columns="campagne_appro",
             values="quantite",
             aggfunc="sum",
             fill_value=0
         )
-        df_table = df_table.reset_index()
-        # on masque les doublons de technicien
-        df_table["technicien_affiche"] = df_table["technicien"].mask(
+
+
+    # filtre
+
+
+    else:
+
+        code = filtre.replace("famille n°", "")
+
+        df_work = df_work[
+            df_work["code_famille"].astype(str) == code
+        ]
+
+        df_table = pd.pivot_table(
+            df_work,
+            index=["technicien", "famille_2"],
+            columns="campagne_appro",
+            values="quantite",
+            aggfunc="sum",
+            fill_value=0
+        )
+
+
+    # evol tech
+
+    if "2024-2025" not in df_table.columns:
+        df_table["2024-2025"] = 0
+    if "2025-2026" not in df_table.columns:
+        df_table["2025-2026"] = 0
+
+    df_table["evolution_%"] = (
+        (df_table["2025-2026"] - df_table["2024-2025"])
+        / df_table["2024-2025"].replace(0, float("nan"))
+    ) * 100
+
+    df_table["evolution_%"] = df_table["evolution_%"].round(2)
+
+
+    # affichage
+
+
+    df_table = df_table.reset_index()
+
+    df_table["technicien"] = df_table["technicien"].mask(
         df_table["technicien"].duplicated()
-        )
+    )
 
-        # on remplace la colonne pour affichage
-        df_table["technicien"] = df_table["technicien_affiche"]
-        df_table = df_table.drop(columns=["technicien_affiche"])
+    st.dataframe(df_table, hide_index=True)
 
-        st.dataframe(df_table, hide_index=True)
-
-
-        #Fermeture du curseur et de la connexion SQL
-        cursor.close()
-        conn.close()
-
-
-
-    elif filtre == "famille n°40":
-         
-        cursor = conn.cursor()
-
-    # je défini df pour l'utiliser dans mon filtrage
-        cursor.execute(f"""
-            SELECT *
-            FROM {dbschema}.{dbtable}
-        """)
-
-        filtre = cursor.fetchall()
-
-        df = pd.DataFrame(
-            filtre,
-            columns=[desc[0] for desc in cursor.description]
-        )
-        
-        df["annee"] = df["date_operation"].dt.year
-        df["date_operation"] = pd.to_datetime(df["date_operation"])
-        df["annee"] = df["date_operation"].dt.year
-
-        df["quantite"] = pd.to_numeric(df["quantite"], errors="coerce")
-
-        # label affichage
-        df["famille_affichage"] = df["code_famille"].astype(str)
-
-        df.loc[
-            df["code_famille"] == 40,
-            "famille_affichage"
-        ] = df["famille_2"]
-
-        # pivot
-        df_table = pd.pivot_table(
-            df,
-            index=["technicien", "annee"],
-            columns="famille_affichage",
-            values="quantite",
-            aggfunc="sum",
-            fill_value=0
-        )
-
-        # masquer doublons technicien (affichage propre)
-        df_table = df_table.reset_index()
-
-        df_table["technicien_affiche"] = df_table["technicien"].mask(
-            df_table["technicien"].duplicated()
-        )
-
-        df_table["technicien"] = df_table["technicien_affiche"]
-        df_table = df_table.drop(columns=["technicien_affiche"])
-
-        st.dataframe(df_table, hide_index=True)
-
-        #Fermeture du curseur et de la connexion SQL
-        cursor.close()
-        conn.close()
+    # Fermeture connexion
+    conn.close()
 
 
 
 
 elif option == "Par années":
     st.write(''':rainbow[EN CONSTRUCTION]''')
-
-
