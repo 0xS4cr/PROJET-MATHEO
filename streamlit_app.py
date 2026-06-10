@@ -66,6 +66,7 @@ elif option == "Par technicien":
 
     cursor.close()
 
+
     # filtres campagnes
     df = df[df["campagne_appro"].isin(["2024-2025", "2025-2026"])]
 
@@ -124,18 +125,41 @@ elif option == "Par technicien":
 
     df_table["evolution_%"] = df_table["evolution_%"].round(2)
 
-
+    #format d'affichage
+    
+    df_table["evolution_%"] = df_table["evolution_%"].apply(
+        lambda x: "" if pd.isna(x) else f"{x:.2f}".rstrip("0").rstrip(".") 
+    )
+    
+    #ajoue de couleurs
+    
+    def color_evolution(val):
+        if pd.isna(val):
+            return ""
+        elif val > 0:
+            return  "color: green"
+        elif val < 0:
+            return  "color: red"
+        else:
+            return ""
+        
+        
     # affichage
-
-
+    
     df_table = df_table.reset_index()
 
     df_table["technicien"] = df_table["technicien"].mask(
         df_table["technicien"].duplicated()
     )
 
-    st.dataframe(df_table, hide_index=True)
-
+    st.dataframe(
+        df_table.style.map(
+            color_evolution,
+            subset=["evolution_%"]
+        ),
+        hide_index=True
+    )
+    
     # Fermeture connexion
     conn.close()
 
@@ -143,4 +167,4 @@ elif option == "Par technicien":
 
 
 elif option == "Par années":
-    st.write(''':rainbow[EN CONSTRUCTION]''')
+    st.write(''':rainbow[:construction: EN CONSTRUCTION :construction:]''')
