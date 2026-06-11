@@ -1,0 +1,20 @@
+/*Mise en forme et en couleur du titre*/
+h1{
+    color: red !important;
+    text-align: left !important;
+    margin-left: 1px !important;
+}
+
+
+ /*Mise à l'échelle du tableau*/
+div[data-testid="stDataFrame"] {
+    width: 300% !important;
+}
+
+/*st.dataframe(df_table, use_container_width=True)
+
+st.set_page_config(layout="wide")
+
+st.dataframe(df_table, use_container_width=True, height=600)
+
+Utiliser ça, peu mieux marcher directement dans le python.*/

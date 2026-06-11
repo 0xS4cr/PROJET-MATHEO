@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import psycopg2
 from database import Base, SessionLocal, engine
 
+
 load_dotenv()
 
 host = os.getenv("DB_HOST")
@@ -18,6 +19,8 @@ dbname = os.getenv("DB_NAME")
 dbschema = os.getenv("DB_SCHEMA")
 dbtable = os.getenv("DB_TABLE")
 
+#connexion SQL a partir du .env
+
 conn = psycopg2.connect(
     host=host,
     database=dbname,
@@ -26,11 +29,20 @@ conn = psycopg2.connect(
 )
 
 
+#import fichier CSS 
+
+with open('./style.css') as f:
+    css = f.read()
+    #st.write("CSS chargé")
+    
+st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+
 #Titre page
 
 st.title("StatCoop - Angélique MAIRE")
 
-st.sidebar.title("Menu")
+st.sidebar.markdown("Menu")
 
 option = st.sidebar.selectbox(
     "Choisissez une option",
@@ -43,14 +55,15 @@ if option == "Acceuil":
 elif option == "Par technicien":
     st.write("Statistiques par technicien")
 
-    st.sidebar.title("Filtres")
+    st.sidebar.markdown("Filtres")
 
     filtre = st.sidebar.selectbox(
         "Choisissez un filtre",
         ["Aucun","famille n°40","famille n°41","famille n°42","famille n°43","famille n°44","famille n°45","famille n°46"]
     )
 
-    # chagrement SQL
+
+# chagrement SQL
     
     cursor = conn.cursor()
 
@@ -67,7 +80,8 @@ elif option == "Par technicien":
     cursor.close()
 
 
-    # filtres campagnes
+# filtres campagnes
+    
     df = df[df["campagne_appro"].isin(["2024-2025", "2025-2026"])]
 
     df["quantite"] = pd.to_numeric(df["quantite"], errors="coerce")
@@ -75,8 +89,7 @@ elif option == "Par technicien":
     df_work = df.copy()
 
 
-    # sans filtre
-
+# sans filtre
 
     if filtre == "Aucun":
 
@@ -90,9 +103,7 @@ elif option == "Par technicien":
         )
 
 
-    # filtre
-
-
+# filtre
     else:
 
         code = filtre.replace("famille n°", "")
@@ -111,7 +122,7 @@ elif option == "Par technicien":
         )
 
 
-    # evol tech
+# evolution tech
 
     if "2024-2025" not in df_table.columns:
         df_table["2024-2025"] = 0
@@ -123,29 +134,22 @@ elif option == "Par technicien":
         / df_table["2024-2025"].replace(0, float("nan"))
     ) * 100
 
-    df_table["evolution_%"] = df_table["evolution_%"].round(2)
 
-    #format d'affichage
-    
-    df_table["evolution_%"] = df_table["evolution_%"].apply(
-        lambda x: "" if pd.isna(x) else f"{x:.2f}".rstrip("0").rstrip(".") 
-    )
-    
-    #ajoue de couleurs
-    
+# Ajouter couleur
+
     def color_evolution(val):
         if pd.isna(val):
             return ""
         elif val > 0:
-            return  "color: green"
+            return "color: green"
         elif val < 0:
-            return  "color: red"
+            return "color: red"
         else:
             return ""
-        
-        
-    # affichage
-    
+
+
+# AFFICHAGE
+
     df_table = df_table.reset_index()
 
     df_table["technicien"] = df_table["technicien"].mask(
@@ -153,18 +157,24 @@ elif option == "Par technicien":
     )
 
     st.dataframe(
-        df_table.style.map(
+        df_table.style
+        .format({
+            "2024-2025": "{:.2f}",
+            "2025-2026": "{:.2f}",
+            "evolution_%": "{:.2f}%"
+        })
+        .map(
             color_evolution,
             subset=["evolution_%"]
         ),
         hide_index=True
     )
-    
-    # Fermeture connexion
+
+# Fermeture connexion
     conn.close()
 
 
-
+#Autre page à définir
 
 elif option == "Par années":
     st.write(''':rainbow[:construction: EN CONSTRUCTION :construction:]''')
