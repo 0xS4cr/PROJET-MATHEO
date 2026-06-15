@@ -1,6 +1,6 @@
 /*Mise en forme et en couleur du titre*/
 h1{
-    color: red !important;
+    color: green !important;
     text-align: left !important;
     /*margin-left: 1px !important;*/
 }

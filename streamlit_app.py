@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 import psycopg2
+import psycopg2 as conn
 from database import Base, SessionLocal, engine
 
 
@@ -21,11 +22,12 @@ dbtable = os.getenv("DB_TABLE")
 
 #connexion SQL a partir du .env
 
-conn = psycopg2.connect(
-    host=host,
-    database=dbname,
-    user=user,
-    password=password
+def get_conn():
+    return psycopg2.connect(
+        host=host,
+        database=dbname,
+        user=user,
+        password=password
 )
 
 
@@ -42,20 +44,30 @@ st.set_page_config(
     layout="wide"
 )
 
+#Personalisation tab NAV
+st.set_page_config(
+    page_title="Stat Coop",
+    page_icon="asset/logo.png",
+    layout="wide"
+)
+
 
 #Titre page
 
 st.title("StatCoop - Angélique MAIRE")
 
+st.sidebar.image("asset/side_logo.png", width=270)
 st.sidebar.markdown("Menu")
 
 option = st.sidebar.selectbox(
-    "Choisissez une option",
-    ["Acceuil", "Par technicien", "Par années"]
+    "Choisissez un tableau",
+    ["Acceuil", "Par technicien", "Par engrais azotes"]
 )
 
 if option == "Acceuil":
-    st.write("Choisir un filtre")
+    st.write("Choisir un tableau")
+    
+#////////////première page/////////////
 
 elif option == "Par technicien":
     st.write("Statistiques par technicien")
@@ -70,6 +82,7 @@ elif option == "Par technicien":
 
 # chagrement SQL
     
+    conn = get_conn()
     cursor = conn.cursor()
 
     cursor.execute(f"""
@@ -176,17 +189,19 @@ elif option == "Par technicien":
         use_container_width=True,
         height=600
     )
-
-# Fermeture connexion
+    cursor.close()
     conn.close()
 
 
-#Autre page à définir
+#//////////////////////////////////////////////////////////////////////////////#
 
-elif option == "Par années":
-    st.write(''':rainbow[:construction: EN CONSTRUCTION :construction:]''')
+#Par engrais azotes deuxième page
+
+elif option == "Par engrais azotes":
+    st.write('Statistiques pas engrais azotes')
 
 
+    conn = get_conn()
     cursor = conn.cursor()
 
     cursor.execute(f"""
@@ -199,65 +214,80 @@ elif option == "Par années":
         columns=[desc[0] for desc in cursor.description]
     )
 
-    cursor.close()
+# SQL
 
-
-# filtres campagnes
-    
     df = df[df["campagne_appro"].isin(["2024-2025", "2025-2026"])]
 
     df["quantite"] = pd.to_numeric(df["quantite"], errors="coerce")
 
     df_work = df.copy()
 
+    df_work = df_work[
+        df_work["famille_2"] == "ENGRAIS AZOTES"
+    ]
 
-# sans filtre
+    df_work["pourcentage_azote"] = pd.to_numeric(
+        df_work["pourcentage_azote"],
+        errors="coerce"
+    )
 
-    if filtre == "Aucun":
-
-        df_table = pd.pivot_table(
-            df_work,
-            index=["technicien", "code_famille"],
-            columns="campagne_appro",
-            values="quantite",
-            aggfunc="sum",
-            fill_value=0
-        )
-
-
-# filtre
-    else:
-
-        code = filtre.replace("famille n°", "")
-
-        df_work = df_work[
-            df_work["code_famille"].astype(str) == code
-        ]
-
-        df_table = pd.pivot_table(
-            df_work,
-            index=["technicien", "famille_2"],
-            columns="campagne_appro",
-            values="quantite",
-            aggfunc="sum",
-            fill_value=0
-        )
+    df_work["unite_azote"] = (
+        df_work["quantite"] *
+        df_work["pourcentage_azote"] *
+        1000
+    )
 
 
-# evolution tech
+# pivot
 
-    if "2024-2025" not in df_table.columns:
-        df_table["2024-2025"] = 0
-    if "2025-2026" not in df_table.columns:
-        df_table["2025-2026"] = 0
+    df_table = pd.pivot_table(
+        df_work,
+        index=["technicien", "famille_2"],
+        columns="campagne_appro",
+        values=["quantite", "unite_azote"],
+        aggfunc="sum",
+        fill_value=0
+    )
 
-    df_table["evolution_%"] = (
-        (df_table["2025-2026"] - df_table["2024-2025"])
-        / df_table["2024-2025"].replace(0, float("nan"))
+# fix bug affichage
+
+    df_table.columns = [
+        f"{col}_{campagne}"
+        for col, campagne in df_table.columns
+    ]
+
+
+# mise en forme des évolutions et colones
+
+    df_table["evolution_quantite_%"] = (
+        (df_table["quantite_2025-2026"] - df_table["quantite_2024-2025"])
+        / df_table["quantite_2024-2025"].replace(0, float("nan"))
     ) * 100
 
+    df_table["evolution_unite_azote_%"] = (
+        (df_table["unite_azote_2025-2026"] - df_table["unite_azote_2024-2025"])
+        / df_table["unite_azote_2024-2025"].replace(0, float("nan"))
+    ) * 100
 
-# Ajouter couleur
+    df_table = df_table.reset_index()
+
+    df_table = df_table[
+        [
+            "technicien",
+            "famille_2",
+
+            "quantite_2024-2025",
+            "quantite_2025-2026",
+            "evolution_quantite_%",
+
+            "unite_azote_2024-2025",
+            "unite_azote_2025-2026",
+            "evolution_unite_azote_%"
+        ]
+    ]
+
+
+#ajoue couleurs évolutions
 
     def color_evolution(val):
         if pd.isna(val):
@@ -266,13 +296,10 @@ elif option == "Par années":
             return "color: green"
         elif val < 0:
             return "color: red"
-        else:
-            return ""
+        return ""
 
 
-# AFFICHAGE
-
-    df_table = df_table.reset_index()
+#affichage tableau
 
     df_table["technicien"] = df_table["technicien"].mask(
         df_table["technicien"].duplicated()
@@ -281,18 +308,25 @@ elif option == "Par années":
     st.dataframe(
         df_table.style
         .format({
-            "2024-2025": "{:.2f}",
-            "2025-2026": "{:.2f}",
-            "evolution_%": "{:.2f}%"
+            "quantite_2024-2025": "{:.2f}",
+            "quantite_2025-2026": "{:.2f}",
+            "unite_azote_2024-2025": "{:.2f}",
+            "unite_azote_2025-2026": "{:.2f}",
+            "evolution_quantite_%": "{:.2f}%",
+            "evolution_unite_azote_%": "{:.2f}%"
         })
         .map(
             color_evolution,
-            subset=["evolution_%"]
+            subset=[
+                "evolution_quantite_%",
+                "evolution_unite_azote_%"
+            ]
         ),
         hide_index=True,
         use_container_width=True,
         height=600
     )
 
-# Fermeture connexion
+#fermeture de la connexion
+    cursor.close()
     conn.close()

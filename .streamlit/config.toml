@@ -1,0 +1,8 @@
+[theme]
+base="dark"
+primaryColor="forestGreen"
+secondaryBackgroundColor="darkSeaGreen"
+
+[theme.sidebar]
+primaryColor="forestGreen"
+
