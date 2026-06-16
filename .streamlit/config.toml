@@ -1,8 +1,11 @@
 [theme]
 base="dark"
-primaryColor="forestGreen"
+primaryColor="#228B22"
+backgroundColor="#0E1117"
 secondaryBackgroundColor="darkSeaGreen"
+textColor="#FAFAFA"
+font="sans serif"
+baseRadius="large"
 
 [theme.sidebar]
-primaryColor="forestGreen"
-
+primaryColor="#228B22"

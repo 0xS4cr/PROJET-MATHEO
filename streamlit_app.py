@@ -286,47 +286,86 @@ elif option == "Par engrais azotes":
         ]
     ]
 
+#modal
 
-#ajoue couleurs évolutions
+@st.dialog("Détail")
+def afficher_familles(technicien):
 
-    def color_evolution(val):
-        if pd.isna(val):
-            return ""
-        elif val > 0:
-            return "color: green"
-        elif val < 0:
-            return "color: red"
-        return ""
+    df_detail = df_work[
+        df_work["technicien"] == technicien
+    ]
 
-
-#affichage tableau
-
-    df_table["technicien"] = df_table["technicien"].mask(
-        df_table["technicien"].duplicated()
-    )
+    st.write(f"Technicien : **{technicien}**")
 
     st.dataframe(
-        df_table.style
-        .format({
-            "quantite_2024-2025": "{:.2f}",
-            "quantite_2025-2026": "{:.2f}",
-            "unite_azote_2024-2025": "{:.2f}",
-            "unite_azote_2025-2026": "{:.2f}",
-            "evolution_quantite_%": "{:.2f}%",
-            "evolution_unite_azote_%": "{:.2f}%"
-        })
-        .map(
-            color_evolution,
-            subset=[
-                "evolution_quantite_%",
-                "evolution_unite_azote_%"
-            ]
-        ),
+        df_detail[["famille_3"]],
         hide_index=True,
-        use_container_width=True,
-        height=600
+        use_container_width=True
     )
 
-#fermeture de la connexion
-    cursor.close()
-    conn.close()
+
+# ajout couleurs évolutions
+
+def color_evolution(val):
+    if pd.isna(val):
+        return ""
+    elif val > 0:
+        return "color: green"
+    elif val < 0:
+        return "color: red"
+    return ""
+
+
+# boutons modal
+
+st.subheader("Détails par technicien")
+
+techniciens = df_table["technicien"].dropna().unique()
+
+for tech in techniciens:
+
+    if st.button(
+        f"🔎 Voir {tech}",
+        key=f"detail_{tech}"
+    ):
+        afficher_familles(tech)
+
+
+
+# affichage tableau
+
+df_affichage = df_table.copy()
+
+df_affichage["technicien"] = df_affichage["technicien"].mask(
+    df_affichage["technicien"].duplicated()
+)
+
+
+st.dataframe(
+    df_affichage.style
+    .format({
+        "quantite_2024-2025": "{:.2f}",
+        "quantite_2025-2026": "{:.2f}",
+        "unite_azote_2024-2025": "{:.2f}",
+        "unite_azote_2025-2026": "{:.2f}",
+        "evolution_quantite_%": "{:.2f}%",
+        "evolution_unite_azote_%": "{:.2f}%"
+    })
+    .map(
+        color_evolution,
+        subset=[
+            "evolution_quantite_%",
+            "evolution_unite_azote_%"
+        ]
+    ),
+    hide_index=True,
+    use_container_width=True,
+    height=600
+)
+
+
+# fermeture connexion
+
+cursor.close()
+conn.close()
+    
