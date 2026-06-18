@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import psycopg2
 import psycopg2 as conn
 from database import Base, SessionLocal, engine
-
+from streamlit_extras.mention import mention
 
 load_dotenv()
 
@@ -191,6 +191,14 @@ elif option == "Par technicien":
     )
     cursor.close()
     conn.close()
+    
+    #Mention
+    
+    mention(
+    label="Coopérative Interval 2026",
+    icon="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgTwZ4hsOaMa8-6BhjmoiQBtPUnPuyynxXmg&s",  # Some icons are available... like Streamlit!
+    url="https://www.interval.coop/",
+    )  
 
 
 #//////////////////////////////////////////////////////////////////////////////#
@@ -286,86 +294,60 @@ elif option == "Par engrais azotes":
         ]
     ]
 
-#modal
-
-@st.dialog("Détail")
-def afficher_familles(technicien):
-
-    df_detail = df_work[
-        df_work["technicien"] == technicien
-    ]
-
-    st.write(f"Technicien : **{technicien}**")
-
-    st.dataframe(
-        df_detail[["famille_3"]],
-        hide_index=True,
-        use_container_width=True
-    )
-
 
 # ajout couleurs évolutions
 
-def color_evolution(val):
-    if pd.isna(val):
+    def color_evolution(val):
+        if pd.isna(val):
+            return ""
+        elif val > 0:
+            return "color: green"
+        elif val < 0:
+            return "color: red"
         return ""
-    elif val > 0:
-        return "color: green"
-    elif val < 0:
-        return "color: red"
-    return ""
-
-
-# boutons modal
-
-st.subheader("Détails par technicien")
-
-techniciens = df_table["technicien"].dropna().unique()
-
-for tech in techniciens:
-
-    if st.button(
-        f"🔎 Voir {tech}",
-        key=f"detail_{tech}"
-    ):
-        afficher_familles(tech)
-
 
 
 # affichage tableau
 
-df_affichage = df_table.copy()
+    df_affichage = df_table.copy()
 
-df_affichage["technicien"] = df_affichage["technicien"].mask(
-    df_affichage["technicien"].duplicated()
-)
+    df_affichage["technicien"] = df_affichage["technicien"].mask(
+        df_affichage["technicien"].duplicated()
+    )
 
 
-st.dataframe(
-    df_affichage.style
-    .format({
-        "quantite_2024-2025": "{:.2f}",
-        "quantite_2025-2026": "{:.2f}",
-        "unite_azote_2024-2025": "{:.2f}",
-        "unite_azote_2025-2026": "{:.2f}",
-        "evolution_quantite_%": "{:.2f}%",
-        "evolution_unite_azote_%": "{:.2f}%"
-    })
-    .map(
-        color_evolution,
-        subset=[
-            "evolution_quantite_%",
-            "evolution_unite_azote_%"
-        ]
-    ),
-    hide_index=True,
-    use_container_width=True,
-    height=600
-)
+    st.dataframe(
+        df_affichage.style
+        .format({
+            "quantite_2024-2025": "{:.2f}",
+            "quantite_2025-2026": "{:.2f}",
+            "unite_azote_2024-2025": "{:.2f}",
+            "unite_azote_2025-2026": "{:.2f}",
+            "evolution_quantite_%": "{:.2f}%",
+            "evolution_unite_azote_%": "{:.2f}%"
+        })
+        .map(
+            color_evolution,
+            subset=[
+                "evolution_quantite_%",
+                "evolution_unite_azote_%"
+            ]
+        ),
+        hide_index=True,
+        use_container_width=True,
+        height=600
+    )
 
+#Mention
+    
+    mention(
+    label="Coopérative Interval 2026",
+    icon="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgTwZ4hsOaMa8-6BhjmoiQBtPUnPuyynxXmg&s",  # Some icons are available... like Streamlit!
+    url="https://www.interval.coop/",
+    )    
 
 # fermeture connexion
 
-cursor.close()
-conn.close()
+    cursor.close()
+    conn.close()
     
