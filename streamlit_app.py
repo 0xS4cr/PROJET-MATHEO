@@ -11,31 +11,61 @@ import psycopg2 as conn
 from database import Base, SessionLocal, engine
 from streamlit_extras.mention import mention
 
-load_dotenv()
+#load_dotenv()
 
-host = os.getenv("DB_HOST")
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASSWORD")
-dbname = os.getenv("DB_NAME")
-dbschema = os.getenv("DB_SCHEMA")
-dbtable = os.getenv("DB_TABLE")
+#host = os.getenv("DB_HOST")
+#user = os.getenv("DB_USER")
+#password = os.getenv("DB_PASSWORD")
+#dbname = os.getenv("DB_NAME")
+#dbschema = os.getenv("DB_SCHEMA")
+#dbtable = os.getenv("DB_TABLE")
 
 #connexion SQL a partir du .env
 
-def get_conn():
-    return psycopg2.connect(
-        host=host,
-        database=dbname,
-        user=user,
-        password=password
-)
+#def get_conn():
+#    return psycopg2.connect(
+#        host=host,
+#        database=dbname,
+#        user=user,
+#        password=password
+#)
 
 
 #import fichier CSS 
 
 with open('./style.css') as f:
     css = f.read()
-    #st.write("CSS chargé")
+
+st.markdown(
+    f"<style>{css}</style>",
+    unsafe_allow_html=True
+)
+
+#Import CSV
+
+@st.cache_data
+def load_data():
+
+    df = pd.read_csv(
+        "Ligne_bon_vente.csv",
+        sep=";",                  
+        encoding="cp1252",
+        encoding_errors="replace",
+        on_bad_lines="skip",
+        low_memory=False
+    )
+
+    # Nettoyage des colonnes
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.lower()
+        .str.replace(" ", "_")
+    )
+
+    return df
+
+df = load_data()
     
 st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
@@ -50,6 +80,122 @@ st.set_page_config(
     page_icon="asset/logo.png",
     layout="wide"
 )
+
+#Gestion thème 
+
+
+if "mode_clair" not in st.session_state:
+    st.session_state.mode_clair = False
+
+
+def changer_theme():
+    st.session_state.mode_clair = not st.session_state.mode_clair
+
+
+st.button(
+    "☀️/🌙",
+    on_click=changer_theme
+)
+
+
+if st.session_state.mode_clair:
+
+    st.markdown(
+        """
+        <style>
+
+        /* PAGE CLAIRE */
+        .stApp {
+            background-color: #FFFFFF !important;
+        }
+
+
+        /* barre du haut Streamlit */
+        header[data-testid="stHeader"] {
+            background-color: #FFFFFF !important;
+        }
+
+
+        /* titre toujours vert */
+        h1 {
+            color: #228B22 !important;
+        }
+
+
+        /* textes */
+        p, label, span {
+            color: #000000 !important;
+        }
+
+
+        /* bouton */
+        .stButton button {
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+            border: 1px solid #228B22 !important;
+        }
+
+
+        /* tableau */
+        div[data-testid="stDataFrame"] {
+            background-color: #FFFFFF !important;
+        }
+
+
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+else:
+
+    st.markdown(
+        """
+        <style>
+
+        /* PAGE SOMBRE */
+        .stApp {
+            background-color: #0E1117 !important;
+        }
+
+
+        /* barre du haut Streamlit */
+        header[data-testid="stHeader"] {
+            background-color: #0E1117 !important;
+        }
+
+
+        /* titre toujours vert */
+        h1 {
+            color: #228B22 !important;
+        }
+
+
+        /* textes */
+        p, label, span {
+            color: #FAFAFA !important;
+        }
+
+
+        /* bouton */
+        .stButton button {
+            background-color: #0E1117 !important;
+            color: #FAFAFA !important;
+            border: 1px solid #228B22 !important;
+        }
+
+
+        /* tableau */
+        div[data-testid="stDataFrame"] {
+            background-color: #0E1117 !important;
+        }
+
+
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 #Titre page
@@ -82,20 +228,26 @@ elif option == "Par technicien":
 
 # chagrement SQL
     
-    conn = get_conn()
-    cursor = conn.cursor()
+#    conn = get_conn()
+#    cursor = conn.cursor()
+#
+#    cursor.execute(f"""
+#        SELECT *
+#        FROM {dbschema}.{dbtable}
+#    """)
+#
+#    df = pd.DataFrame(
+#        cursor.fetchall(),
+#        columns=[desc[0] for desc in cursor.description]
+#    )
 
-    cursor.execute(f"""
-        SELECT *
-        FROM {dbschema}.{dbtable}
-    """)
+#    cursor.close()
 
-    df = pd.DataFrame(
-        cursor.fetchall(),
-        columns=[desc[0] for desc in cursor.description]
-    )
 
-    cursor.close()
+#CSV
+    df = load_data()
+    
+    df.columns = df.columns.str.strip()
 
 
 # filtres campagnes
@@ -176,7 +328,11 @@ elif option == "Par technicien":
 
     st.dataframe(
         df_table.style
-        .format({
+        .set_properties(**{
+            "background-color": "#FFFFFF" if st.session_state.mode_clair else "#0E1117",
+            "color": "#000000" if st.session_state.mode_clair else "#FAFAFA"
+        })
+    .format({
             "2024-2025": "{:.2f}",
             "2025-2026": "{:.2f}",
             "evolution_%": "{:.2f}%"
@@ -189,8 +345,8 @@ elif option == "Par technicien":
         use_container_width=True,
         height=600
     )
-    cursor.close()
-    conn.close()
+#    cursor.close()
+#    conn.close()
     
     #Mention
     
@@ -209,18 +365,25 @@ elif option == "Par engrais azotes":
     st.write('Statistiques pas engrais azotes')
 
 
-    conn = get_conn()
-    cursor = conn.cursor()
+#    conn = get_conn()
+#    cursor = conn.cursor()
 
-    cursor.execute(f"""
-        SELECT *
-        FROM {dbschema}.{dbtable}
-    """)
+#    cursor.execute(f"""
+#        SELECT *
+#        FROM {dbschema}.{dbtable}
+#    """)
 
-    df = pd.DataFrame(
-        cursor.fetchall(),
-        columns=[desc[0] for desc in cursor.description]
-    )
+#    df = pd.DataFrame(
+#        cursor.fetchall(),
+#        columns=[desc[0] for desc in cursor.description]
+#    )
+
+
+#CSV
+
+    df = load_data()
+    
+    df.columns = df.columns.str.strip()
 
 # SQL
 
@@ -318,7 +481,11 @@ elif option == "Par engrais azotes":
 
     st.dataframe(
         df_affichage.style
-        .format({
+        .set_properties(**{
+            "background-color": "#FFFFFF" if st.session_state.mode_clair else "#0E1117",
+            "color": "#000000" if st.session_state.mode_clair else "#FAFAFA"
+        })
+    .format({
             "quantite_2024-2025": "{:.2f}",
             "quantite_2025-2026": "{:.2f}",
             "unite_azote_2024-2025": "{:.2f}",
@@ -348,6 +515,6 @@ elif option == "Par engrais azotes":
 
 # fermeture connexion
 
-    cursor.close()
-    conn.close()
+#    cursor.close()
+#    conn.close()
     

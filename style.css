@@ -1,20 +1,55 @@
-/*Mise en forme et en couleur du titre*/
-h1{
-    color: green !important;
-    text-align: left !important;
-
-}
-
-
- /*Mise à l'échelle du tableau*/
-div[data-testid="stDataFrame"] {
-    width: 300% !important;
-}
-
 h1 {
-    color: #228B22;
+    color: #228B22 !important;
+    text-align: left !important;
+    
 }
+
+
+
+div[data-testid="stDataFrame"] {
+    width: 100% !important;
+}
+
+
+/* agrandir la zone du tableau */
+div[data-testid="stDataFrame"] > div {
+    width: 100% !important;
+}
+
 
 section[data-testid="stSidebar"] {
     border-right: 1px solid #228B22;
+}
+
+.stButton > button {
+    border-radius: 8px;
+    border: 1px solid #228B22;
+}
+
+.stButton > button:hover {
+    border-color: #8FBC8F;
+}
+
+
+
+div[data-baseweb="select"] {
+    border-radius: 8px;
+}
+
+
+p, label {
+    font-size: 15px;
+}
+
+/* Conteneur dataframe */
+
+[data-testid="stDataFrame"] {
+    width: 100% !important;
+}
+
+
+/* cellule dataframe */
+
+[data-testid="stDataFrame"] iframe {
+    background-color: transparent !important;
 }
