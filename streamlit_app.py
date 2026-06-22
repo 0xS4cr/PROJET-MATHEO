@@ -47,7 +47,7 @@ st.markdown(
 def load_data():
 
     df = pd.read_csv(
-        "Ligne_bon_vente.csv",
+        "data/Ligne_bon_vente.csv",
         sep=";",                  
         encoding="cp1252",
         encoding_errors="replace",
@@ -55,7 +55,7 @@ def load_data():
         low_memory=False
     )
 
-    # Nettoyage des colonnes
+
     df.columns = (
         df.columns
         .str.strip()
@@ -352,7 +352,7 @@ elif option == "Par technicien":
     
     mention(
     label="Coopérative Interval 2026",
-    icon="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgTwZ4hsOaMa8-6BhjmoiQBtPUnPuyynxXmg&s",  # Some icons are available... like Streamlit!
+    icon="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgTwZ4hsOaMa8-6BhjmoiQBtPUnPuyynxXmg&s",
     url="https://www.interval.coop/",
     )  
 
@@ -509,7 +509,7 @@ elif option == "Par engrais azotes":
     
     mention(
     label="Coopérative Interval 2026",
-    icon="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgTwZ4hsOaMa8-6BhjmoiQBtPUnPuyynxXmg&s",  # Some icons are available... like Streamlit!
+    icon="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgTwZ4hsOaMa8-6BhjmoiQBtPUnPuyynxXmg&s",
     url="https://www.interval.coop/",
     )    
 
