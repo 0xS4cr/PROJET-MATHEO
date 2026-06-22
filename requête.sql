@@ -15,4 +15,3 @@ order by
 
 -- Permet d'agréger les lignes
 group by
-
